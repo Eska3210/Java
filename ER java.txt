@@ -1,0 +1,265 @@
+// Import necessary packages
+package com.mycompany.vacaystarapp;
+
+import java.io.FileWriter;
+import java.io.IOException;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Scanner;
+
+// Define the Booking class to store booking information
+class Booking {
+    // Private member variables to store booking details
+    private String customerName;
+    private String contactNumber;
+    private Date arrivalDate;
+    private int numDays;
+    private int accommodationChoice;
+    private double subTotal;
+
+    // Constructor to initialize booking details
+    public Booking(String customerName, String contactNumber, Date arrivalDate, int numDays, int accommodationChoice, double subTotal) {
+        this.customerName = customerName;
+        this.contactNumber = contactNumber;
+        this.arrivalDate = arrivalDate;
+        this.numDays = numDays;
+        this.accommodationChoice = accommodationChoice;
+        this.subTotal = subTotal;
+    }
+
+    // Getter method to retrieve the number of days for the booking
+    public int getNumDays() {
+        return numDays;
+    }
+
+    // Getter method to retrieve the subtotal of the booking
+    public double getSubTotal() {
+        return subTotal;
+    }
+
+    // Method to calculate the leaving date based on arrival date and number of days
+    public Date getLeavingDate() {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(arrivalDate);
+        calendar.add(Calendar.DATE, numDays);
+        return calendar.getTime();
+    }
+
+    // Override toString() method to represent the Booking object as a string
+    @Override
+    public String toString() {
+        return "Customer Name: " + customerName + ", Contact Number: " + contactNumber +
+                ", Arrival Date: " + arrivalDate + ", Number of Days: " + numDays +
+                ", Accommodation Choice: " + accommodationChoice + ", Subtotal: £" + subTotal;
+    }
+}
+
+// Define the BookingManager class to manage bookings
+class BookingManager {
+    // ArrayList to store booking objects
+    private ArrayList<Booking> bookings;
+
+    // Constructor to initialize the ArrayList
+    public BookingManager() {
+        this.bookings = new ArrayList<>();
+    }
+
+    // Method to add a booking to the ArrayList
+    public void addBooking(Booking booking) {
+        bookings.add(booking);
+    }
+
+    // Method to save bookings to a CSV file
+    public void saveBookingsToCsv(String fileName) throws IOException {
+        FileWriter writer = new FileWriter(fileName);
+        for (Booking booking : bookings) {
+            writer.append(booking.toString());
+            writer.append('\n');
+        }
+        writer.flush();
+        writer.close();
+    }
+
+    // Method to view existing bookings
+    public void viewExistingBookings() {
+        // Check if there are no bookings
+        if (bookings.isEmpty()) {
+            System.out.println("No bookings available.");
+            return;
+        }
+        // Print existing bookings
+        System.out.println("Existing Bookings:");
+        for (int i = 0; i < bookings.size(); i++) {
+            Booking booking = bookings.get(i);
+            System.out.println("Booking " + (i + 1) + ": " + booking.toString());
+            System.out.println("Total Cost: £" + calculateTotalCost(booking));
+            System.out.println("Day of Leaving: " + booking.getLeavingDate());
+        }
+    }
+
+    // Method to calculate total cost including possible discounts
+    private double calculateTotalCost(Booking booking) {
+        double totalCost = booking.getSubTotal();
+        if (booking.getNumDays() >= 14) {
+            totalCost *= 0.9; // 10% discount for stays longer than or equal to 14 days
+        }
+        return totalCost;
+    }
+}
+
+// Main class to run the VacayStarApp
+public class VacayStarApp {
+
+    // Array of accommodation choices
+    public static final String[] ACCOMMODATIONS = {"Imperial Lodge", "Sunshine Apt.", "Standard Cabin", "Rustic Shed", "Classic Caravan"};
+    public static final double VAT_RATE = 0.15; // VAT rate for calculations
+    public static final String CSV_FILE_NAME = "vacaystar_bookings.csv"; // CSV file name for saving bookings
+
+    // Main method to start the application
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in); // Scanner object to get user input
+        BookingManager bookingManager = new BookingManager(); // Create a BookingManager object to manage bookings
+
+        int choice; // Variable to store user's choice
+
+        // Start the main loop of the application
+        do {
+            System.out.println("\nWelcome to VacayStar Bookings!"); // Display welcome message
+            System.out.println("1. Make a New Booking");
+            System.out.println("2. View Existing Bookings (Admin)");
+            System.out.println("3. Exit");
+
+            System.out.print("Enter your choice: "); // Prompt user for choice
+            choice = scanner.nextInt(); // Get user input for choice
+            scanner.nextLine(); // Consume newline character
+
+            // Switch statement to handle user's choice
+            switch (choice) {
+                case 1:
+                    makeNewBooking(scanner, bookingManager); // Make a new booking
+                    break;
+                case 2:
+                    bookingManager.viewExistingBookings(); // View existing bookings for Admin
+                    break;
+                case 3:
+                    System.out.println("Exiting VacayStar Bookings..."); // Exit the application
+                    break;
+                default:
+                    System.out.println("Invalid Choice! Please try again."); // Display error message for invalid choice
+            }
+        } while (choice != 3); // Continue loop until user chooses to exit
+
+        scanner.close(); // Close the scanner object
+    }
+
+    // Method to make a new booking
+    private static void makeNewBooking(Scanner scanner, BookingManager bookingManager) {
+        int accommodationChoice = selectAccommodation(scanner); // Select accommodation
+        if (accommodationChoice == -1) {
+            System.out.println("Accommodation selection cancelled.");
+            return;
+        }
+
+        Date arrivalDate = getArrivalDate(scanner); // Get arrival date
+        if (arrivalDate == null) {
+            System.out.println("Booking cancelled.");
+            return;
+        }
+        int numDays = getNumberOfDays(scanner); // Get number of days
+        if (numDays <= 0) {
+            System.out.println("Invalid number of days. Booking cancelled.");
+            return;
+        }
+        double subTotal = calculateSubTotal(accommodationChoice, numDays); // Calculate subtotal
+
+        System.out.print("Enter Customer Name: ");
+        String customerName = scanner.nextLine(); // Get customer name
+        System.out.print("Enter Contact Number: ");
+        String contactNumber = scanner.nextLine(); // Get contact number
+
+        // Create a new Booking object with the provided details
+        Booking newBooking = new Booking(customerName, contactNumber, arrivalDate, numDays,
+                accommodationChoice, subTotal);
+        bookingManager.addBooking(newBooking); // Add the new booking to the booking manager
+
+        try {
+            bookingManager.saveBookingsToCsv(CSV_FILE_NAME); // Save bookings to CSV file
+            System.out.println("Booking created and saved successfully!");
+        } catch (IOException e) {
+         System.err.println("Error saving booking to file: " + e.getMessage()); // Display error message if saving fails
+        }
+    }
+
+    // Method to select accommodation
+    private static int selectAccommodation(Scanner scanner) {
+        System.out.println("Select Accommodation:"); // Prompt user to select accommodation
+        for (int i = 0; i < ACCOMMODATIONS.length; i++) {
+            System.out.println((i + 1) + ". " + ACCOMMODATIONS[i]); // Display accommodation options
+        }
+        System.out.print("Enter your choice: "); // Prompt user for choice
+        int choice = scanner.nextInt(); // Get user input for choice
+        scanner.nextLine(); // Consume newline character
+        if (choice < 1 || choice > ACCOMMODATIONS.length) { // Check if choice is valid
+            System.out.println("Invalid choice!"); // Display error message for invalid choice
+            return -1; // Return -1 to indicate invalid choice
+        }
+        return choice - 1; // Return the index of selected accommodation
+    }
+
+    // Method to get arrival date from user input
+    private static Date getArrivalDate(Scanner scanner) {
+        DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy"); // Create date format
+        dateFormat.setLenient(false); // Set lenient mode to false to enforce strict date parsing
+
+        System.out.print("Enter Arrival Date (dd/MM/yyyy): "); // Prompt user for arrival date
+        String inputDate = scanner.nextLine(); // Get user input for date
+
+        try {
+            return dateFormat.parse(inputDate); // Parse input date string into a Date object
+        } catch (ParseException e) {
+            System.out.println("Invalid date format! Please use dd/MM/yyyy."); // Display error message for invalid date format
+            return null; // Return null to indicate parsing failure
+        }
+    }
+
+    // Method to get number of days from user input
+    private static int getNumberOfDays(Scanner scanner) {
+        System.out.print("Enter Number of Days: "); // Prompt user for number of days
+        return scanner.nextInt(); // Get user input for number of days
+    }
+
+    // Method to calculate subtotal based on accommodation choice and number of days
+    private static double calculateSubTotal(int accommodationChoice, int numDays) {
+        double dailyRate = 0; // Initialize daily rate
+        switch (accommodationChoice) {
+            case 0: // Imperial Lodge
+                dailyRate = 200; // Set daily rate
+                break;
+            case 1: // Sunshine Apt.
+                dailyRate = 150;
+                break;
+            case 2: // Standard Cabin
+                dailyRate = 100;
+                break;
+            case 3: // Rustic Shed
+                dailyRate = 80;
+                break;
+            case 4: // Classic Caravan
+                dailyRate = 120;
+                break;
+            default:
+                System.out.println("Invalid accommodation choice!"); // Display error message for invalid choice
+        }
+        return dailyRate * numDays; // Calculate and return subtotal
+    }
+}
+
+
+
+
+    
+        
